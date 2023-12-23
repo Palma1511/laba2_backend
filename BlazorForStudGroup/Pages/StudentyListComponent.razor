@@ -1,0 +1,60 @@
+﻿@page "/students"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+
+
+<PageTitle>Студенты</PageTitle>
+
+<h3>Список студентов</h3>
+
+@if (fulfil && studentsCount == 0)
+{
+    <p>Студент отстуствуют.</p>
+}
+else if (!fulfil && studentsCount == 0)
+{
+    <p>Идет загрузка...</p>
+}
+
+@if (studentsCount != 0)
+{
+    <table class="table table-bordered table_sm text-center">
+        <thead>
+            <tr>
+                <th scope="col">Имя</th>
+                <th scope="col">Фамилия</th>
+                <th scope="col">Группа</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var stud in students)
+            {
+                <tr>
+                    <td>@stud.Name</td>
+                    <td>@stud.Surname</td>
+                    <td>@stud.Groups</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<StudentDto> students;
+    private bool fulfil = false;
+    private int studentsCount = 0;
+
+    protected override async Task OnParametersSetAsync() =>
+        students = await Http.GetFromJsonAsync<StudentDto[]>("https://localhost:7198/api/Students");
+
+    protected override async Task OnInitializedAsync()
+    {
+        students = await Http.GetFromJsonAsync<IEnumerable<StudentDto>>("https://localhost:7198/api/Students");
+        fulfil = true;
+        studentsCount = students.Count();
+    }
+}

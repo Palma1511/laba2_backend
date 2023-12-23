@@ -1,0 +1,186 @@
+﻿@page "/groups/edit"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+
+<PageTitle>Изменить</PageTitle>
+
+<h3>Изменение группу</h3>
+
+<div id="input" class="form-group row mb-3">
+    <label for="ID" class="form-label">ID группы</label>
+    <input @bind="groupID" placeholder="ID группы" class="form-control @inputStatus" id="ID" />
+    <div class="invalid-feedback">
+        Данные не найдены
+    </div>
+    <div class="valid-feedback">
+        Данные изменены
+    </div>
+</div>
+<div class="form-group mb-3">
+    <button @onclick="GroupExist" class="btn btn-primary">Проверить</button>
+</div>
+
+@if (groupStatus)
+{
+    <div class="form-group row mb-3">
+        <label for="CategoryName" class="form-label">Название группы</label>
+        <input @bind="NameGroup" placeholder="Группа" class="form-control" id="GroupName" />
+    </div>
+    <div class="form-group row mb-3">
+        <label for="Toys" class="form-label">Студенты</label>
+        <select @bind=studID class="form-select" id="Toys" disabled="@is_disabled">
+            <option value="" selected>Добавить студента...</option>
+            @foreach (var stud in Students)
+            {
+                <option value="@stud.Id">@stud.Name</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        @if (studID == "")
+        {
+            <button class="btn btn-success" @onclick="AddStudentForm">
+                <span class="oi oi-plus" aria-hidden="true"></span>
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-warning" @onclick="EditStudentForm">
+                <span class="oi oi-pencil" aria-hidden="true"></span>
+            </button>
+            <button class="btn btn-danger" @onclick="DeleteStudent">
+                <span class="oi oi-trash" aria-hidden="true"></span>
+            </button>
+        }
+    </div>
+    @if (is_edit || is_add)
+    {
+        <div class="form-group row mb-3">
+            <div class="form-group row mb-3">
+                <label for="studName" class="form-label">Имя</label>
+                <input @bind="studName" placeholder="Имя" class="form-control" id="studName" />
+            </div>
+            <div class="form-group row mb-3">
+                <label for="Surname" class="form-label">Имя</label>
+                <input @bind="Surname" placeholder="Фамилия" class="form-control" id="Surname" />
+            </div>
+            <div class="form-group">
+                @if (is_add)
+                {
+                    <button class="btn btn-success" @onclick="AddStudent">Добавить студента</button>
+                }
+                else
+                {
+                    <button class="btn btn-warning" @onclick="EditStudent">Изменить данные студента</button>
+                }
+            </div>
+        </div>
+    }
+    <div class="form-group">
+        <button @onclick="EditGroup" class="btn btn-warning">Изменить</button>
+    </div>
+}
+
+@code {
+    private Guid groupID;
+    private string inputStatus;
+    private bool groupStatus = false;
+    private string NameGroup;
+    private string studID = "";
+    private bool is_disabled = false;
+    private bool is_add = false;
+    private bool is_edit = false;
+    private string studName;
+    private string Surname;
+    private List<StudentDto> Students;
+
+    private async Task GroupExist()
+    {
+        var response = (await Http.GetAsync($"https://localhost:7162/api/Categories/{groupID}")).StatusCode;
+        if (response == System.Net.HttpStatusCode.NotFound)
+        {
+            inputStatus = "is-invalid";
+        }
+        else
+        {
+            inputStatus = "";
+            var groupe = await Http.GetFromJsonAsync<GroupDto>($"https://localhost:7162/api/Categories/{groupID}");
+            NameGroup = groupe.NameGroup;
+            Students = groupe.StudentDtos;
+            groupStatus = true;
+        }
+    }
+
+    private async Task EditGroup()
+    {
+        var group = new GroupDto { Id = groupID, NameGroup = NameGroup, StudentDtos = Students };
+        await Http.PutAsJsonAsync<GroupDto>($"https://localhost:7162/api/Categories/{groupID}", group);
+        inputStatus = "is-valid";
+        groupStatus = false;
+    }
+
+    private async Task AddStudentForm()
+    {
+        is_disabled = true;
+        is_add = true;
+    }
+
+    private async Task EditStudentForm()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                studName = exist_stud.Name;
+                Surname = exist_stud.Surname;
+                is_disabled = true;
+                is_edit = true;
+                break;
+            }
+        }
+    }
+
+    private async Task AddStudent()
+    {
+        var Category = (await Http.GetFromJsonAsync<GroupDto>($"https://localhost:7162/api/Categories/{groupID}")).NameGroup;
+        var stud = new StudentDto { Name = studName, Groups = NameGroup, Surname = Surname};
+        Students.Add(stud);
+        studName = "";
+        Surname = "";
+        is_disabled = false;
+        is_add = false;
+    }
+
+    private async Task EditStudent()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                exist_stud.Name = studName;
+                exist_stud.Surname = Surname;
+                studName = "";
+                Surname = "";
+                is_disabled = false;
+                is_edit = false;
+                break;
+            }
+        }
+    }
+
+    private async Task DeleteStudent()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                Students.Remove(exist_stud);
+                break;
+            }
+        }
+    }
+}

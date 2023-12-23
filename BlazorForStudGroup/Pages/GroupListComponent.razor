@@ -1,0 +1,81 @@
+﻿@page "/groups"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+@using GroupStudents.Domain
+
+<PageTitle>Категории</PageTitle>
+
+<h3>Список категорий</h3>
+
+@if (fulfil && groupsCount == 0)
+{
+    <p>Категории отстуствуют.</p>
+}
+else if (!fulfil && groupsCount == 0)
+{
+    <p>Идет загрузка...</p>
+}
+
+@if (groupsCount != 0)
+{
+    <table class="table table-bordered table_sm text-center">
+        <thead>
+            <tr>
+                <th scope="col" rowspan="2">Группа</th>
+                <th scope="col" colspan="4">Студенты</th>
+            </tr>
+            <tr>
+                <th scope="col">Группа</th>
+                <th scope="col">Студенты</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var groupes in groups)
+            {
+                <tr>
+                    @if (groupes.StudentDtos.Count == 0)
+                    {
+                        <td>@groupes.NameGroup</td>
+                        <td colspan="5">Не найдено</td>
+                    }
+                    else
+                    {
+                        <td rowspan="@groupes.StudentDtos.Count">@groupes.NameGroup</td>
+                        <td>@groupes.StudentDtos[0].Name</td>
+                        <td>@groupes.StudentDtos[0].Surname</td>
+                    }
+                </tr>
+                @foreach (var stud in groupes.StudentDtos)
+                {
+                    if (groupes.StudentDtos.IndexOf(stud) != 0)
+                    {
+                        <tr>
+                            <td>@stud.Name</td>
+                            <td>@stud.Surname</td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<GroupDto> groups;
+    private bool fulfil = false;
+    private int groupsCount = 0;
+
+    protected override async Task OnParametersSetAsync() =>
+        groups = await Http.GetFromJsonAsync<GroupDto[]>("https://localhost:7198/api/Stud");
+
+    protected override async Task OnInitializedAsync()
+    {
+        groups = await Http.GetFromJsonAsync<IEnumerable<GroupDto>>("https://localhost:7198/api/Stud");
+        fulfil = true;
+        groupsCount = groups.Count();
+    }
+}

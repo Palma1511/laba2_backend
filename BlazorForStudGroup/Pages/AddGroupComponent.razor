@@ -1,0 +1,160 @@
+﻿@page "/group/add"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+@using GroupStudents.Domain
+
+<PageTitle>Добавить</PageTitle>
+
+<h3>Добавление новой шруппы</h3>
+
+<div class="form-group row mb-3">
+    <label for="ID" class="form-label">Название группы</label>
+    <input @bind="NameGroup" placeholder="Название группы" class="form-control @inputStatus" id="ID" />
+    <div class="invalid-feedback">
+        Группа уже существует
+    </div>
+    <div class="valid-feedback">
+        Группа добавлена
+    </div>
+</div>
+<div class="form-group row mb-3">
+    <label for="Students" class="form-label">Студенты</label>
+    <select @bind=studID class="form-select" id="Toys" disabled="@is_disabled">
+        <option value="" selected>Добавить студента...</option>
+        @foreach (var stud in Students)
+        {
+            <option value="@stud.Id">@stud.Name</option>
+        }
+    </select>
+</div>
+<div class="mb-3">
+    @if (studID == "")
+    {
+        <button class="btn btn-success" @onclick="AddStudentsForm">
+            <span class="oi oi-plus" aria-hidden="true"></span>
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-warning" @onclick="EditStudentsForm">
+            <span class="oi oi-pencil" aria-hidden="true"></span>
+        </button>
+        <button class="btn btn-danger" @onclick="DeleteStudents">
+            <span class="oi oi-trash" aria-hidden="true"></span>
+        </button>
+    }
+</div>
+@if (is_edit || is_add)
+{
+    <div class="form-group row mb-3">
+        <div class="form-group row mb-3">
+            <label for="ToyName" class="form-label">Название</label>
+            <input @bind="studName" placeholder="Имя" class="form-control" id="StudName" />
+        </div>
+        <div class="form-group row mb-3">
+            <label for="Character" class="form-label">Персонаж</label>
+            <input @bind="studSurname" placeholder="Фамилия" class="form-control" id="Character" />
+        </div>
+        <div class="form-group">
+            @if (is_add)
+            {
+                <button class="btn btn-success" @onclick="AddStudents">Добавить студента</button>
+            }
+            else
+            {
+                <button class="btn btn-warning" @onclick="EditStud">Изменить данные студента</button>
+            }
+        </div>
+    </div>
+}
+<div class="form-group">
+    <button @onclick="AddGroup" class="btn btn-success">Добавить</button>
+</div>
+
+@code {
+    private string NameGroup;
+    private string inputStatus;
+    private string studID = "";
+    private bool is_disabled = false;
+    private bool is_add = false;
+    private bool is_edit = false;
+    private string studName;
+    private string studSurname;
+    private List<StudentDto> Students = new List<StudentDto>();
+
+    protected async Task AddGroup()
+    {
+        var response = (await Http.GetAsync($"https://localhost:7162/api/Group/nameG/{NameGroup}")).StatusCode;
+        if (response == System.Net.HttpStatusCode.NotFound)
+        {
+            var group = new GroupDto { NameGroup = NameGroup, StudentDtos = Students };
+            await Http.PostAsJsonAsync("https://localhost:7162/api/Group", group);
+            NameGroup = "";
+            inputStatus = "is-valid";
+        }
+        else
+        {
+            inputStatus = "is-invalid";
+        }
+    }
+    private async Task AddStudentsForm()
+    {
+        is_disabled = true;
+        is_add = true;
+    }
+    private async Task EditStudentsForm()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                studName = exist_stud.Name;
+                studSurname = exist_stud.Surname;
+                is_disabled = true;
+                is_edit = true;
+                break;
+            }
+        }
+    }
+
+    private async Task AddStudents()
+    {
+        var stud = new StudentDto { Name = studName, Surname = studSurname, Groups = NameGroup};
+        Students.Add(stud);
+        studSurname = "";
+        is_disabled = false;
+        is_add = false;
+    }
+    private async Task EditStud()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                exist_stud.Name = studName;
+                exist_stud.Surname = studSurname;
+                studName = "";
+                studSurname = "";
+                is_disabled = false;
+                is_edit = false;
+                break;
+            }
+        }
+    }
+
+    private async Task DeleteStudents()
+    {
+        foreach (var exist_stud in Students)
+        {
+            if (exist_stud.Id.ToString() == studID)
+            {
+                Students.Remove(exist_stud);
+                break;
+            }
+        }
+    }
+}

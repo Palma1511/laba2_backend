@@ -1,0 +1,81 @@
+﻿@page "/students/edit"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+
+<PageTitle>Изменить</PageTitle>
+
+<h3>Изменение данные студента</h3>
+
+<p>Введите ID студента</p>
+
+<div id="input" class="form-group row mb-3">
+    <input @bind="studID" placeholder="ID студента" class="form-control @inputStatus" />
+    <div class="invalid-feedback">
+        Данные не найдены
+    </div>
+    <div class="valid-feedback">
+        Данные изменены
+    </div>
+</div>
+<div class="form-group mb-3">
+    <button @onclick="StudentExist" class="btn btn-primary">Проверить</button>
+</div>
+
+@if (studStatus)
+{
+    <div class="form-group row mb-3">
+        <label for="Name" class="form-label">Имя</label>
+        <input @bind="Name" placeholder="Имя" class="form-control" id="Name" />
+    </div>
+    <div class="form-group row mb-3">
+        <label for="Group" class="form-label">Группа</label>
+        <input @bind="Group" placeholder="Группа" class="form-control" id="Group" />
+    </div>
+    <div class="form-group row mb-3">
+        <label for="Surname" class="form-label">Фамилия</label>
+        <input @bind="Surname" placeholder="Фамилия" class="form-control" id="Surname" />
+    </div>
+    <div class="form-group">
+        <button @onclick="EditStudent" class="btn btn-warning">Изменить</button>
+    </div>
+}
+
+@code {
+    private Guid studID;
+    private string inputStatus;
+    private bool studStatus = false;
+    private string Name;
+    private string Group;
+    private string Surname;
+
+    private async Task StudentExist()
+    {
+        var response = (await Http.GetAsync($"https://localhost:7162/api/Students/{studID}")).StatusCode;
+        if (response == System.Net.HttpStatusCode.NotFound)
+        {
+
+            inputStatus = "is-invalid";
+        }
+        else
+        {
+            inputStatus = "";
+            var stud = await Http.GetFromJsonAsync<StudentDto>($"https://localhost:7162/api/Toys/{studID}");
+            Name = stud.Name;
+            Group = stud.Groups;
+            Surname = stud.Surname;
+            studStatus = true;
+        }
+    }
+
+    private async Task EditStudent()
+    {
+        var stud = new StudentDto { Id = studID, Name = Name, Groups = Group, Surname = Surname};
+        await Http.PutAsJsonAsync<StudentDto>($"https://localhost:7162/api/Toys/{studID}", stud);
+        inputStatus = "is-valid";
+        studStatus = false;
+    }
+}

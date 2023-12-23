@@ -1,0 +1,46 @@
+﻿@page "/students/add"
+
+@using System.Net.Http
+@inject HttpClient Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using GroupStudents.API.DTO
+<PageTitle>Добавить</PageTitle>
+
+<h3>Добавление нового ученика</h3>
+
+<div class="form-group row mb-3">
+    <label for="Name" class="form-label">Имя</label>
+    <input @bind="Name" placeholder="Имя" class="form-control" id="Name" />
+</div>
+<div class="form-group row mb-3">
+    <label for="Character" class="form-label">Фамилия</label>
+    <input @bind="Surname" placeholder="Фамилия" class="form-control" id="Surname" />
+</div>
+<div class="form-group row mb-3">
+    <label for="Category" class="form-label">Группа</label>
+    <input @bind="Group" placeholder="Группа" class="form-control" id="Group" />
+</div>
+
+<div class="form-group">
+    <button @onclick="AddStudent" class="btn btn-success @inputStatus">Добавить</button>
+    <div class="valid-feedback">
+        Студент добавлен
+    </div>
+</div>
+@code {
+    private string Name;
+    private string Group;
+    private string Surname;
+    private string inputStatus;
+
+    protected async Task AddStudent()
+    {
+        var stud = new StudentDto { Name = Name, Surname = Surname, Groups = Group};
+        await Http.PostAsJsonAsync("https://localhost:7162/api/Students", stud);
+        Name = "";
+        Surname = "";
+        Group = "";
+        inputStatus = "is-valid";
+    }
+}
